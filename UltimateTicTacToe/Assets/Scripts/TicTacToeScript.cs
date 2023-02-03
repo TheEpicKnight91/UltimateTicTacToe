@@ -8,37 +8,32 @@ using UnityEngine.UI;
 public class TicTacToeScript : NetworkBehaviour
 {
 
-    public class Square
+    public struct Cell : INetworkSerializable, System.IEquatable<Cell>
     {
-        public Button buttonName;
-        public string mark;
+        public FixedString64Bytes buttonName;
+        public FixedString64Bytes mark;
 
-        public Square(Button button, string m)
+        public  Cell(string button, string m)
         {
             buttonName = button;
             mark = m;
         }
-    }
 
-    public struct Row : INetworkSerializeByMemcpy
-    {
-        public List<Square> squares;
-
-        public Row(List<Square> s)
+        public bool Equals(Cell other)
         {
-            squares = s;
+            return buttonName.Equals(other.buttonName) && mark.Equals(other.mark);
         }
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
-            //serializer.SerializeValue(ref squares);
+            serializer.SerializeValue(ref mark);
+            serializer.SerializeValue(ref buttonName);
         }
     }
 
     public Sprite xImage;
     public Sprite oImage;
-    //private static readonly NetworkList<Row> networkList = new();
-    //public NetworkList<Row> cell = networkList;
+    public NetworkList<Cell> cellList;
     public MainGameScript mainGameScript;
     public NetworkVariable<PlayerScript> xPlayer = null;
     public NetworkVariable<PlayerScript> oPlayer = null;
@@ -47,6 +42,7 @@ public class TicTacToeScript : NetworkBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        settingNetworkList();
         if (NetworkManager.Singleton.IsServer)
         {
             xPlayer.Value = GameObject.FindWithTag("xPlayer").GetComponent<PlayerScript>();
@@ -82,72 +78,68 @@ public class TicTacToeScript : NetworkBehaviour
     public void ChoseSquare(Button button)
     {
         Sprite img;
-        /*foreach(Rows row in cell.Value)
+        Cell cellClicked = new Cell(button.transform.name, "");
+        foreach(Cell cell in cellList)
         {
-            foreach(Squares square in row.rowsList)
+            if (cell.Equals(cellClicked))
             {
-                if (square.button == button)
-                {
-                    square.mark = playerTurn;
-                    break;
-                }
+                cellClicked.mark = playerTurn;
+                cellList[cellList.IndexOf(cell)] = cellClicked;
+                break;
             }
         }
         if (VerticalCheck() || HorizontalCheck() || DiagonalCheck() || ReverseDiagonalCheck())
         {
             Debug.Log("Winner: Player " + playerTurn);
             mainGameScript.setPlayerWin(playerTurn);
-            foreach(Rows row in cell.Value)
+            foreach (Transform cell in transform)
             {
-                foreach(Squares sqaure in row.rowsList)
-                {
-                    sqaure.button.interactable = false;
-                }
+                transform.GetComponent<Button>().interactable = false;
             }
-        }*/
+        }
         if (playerTurn == "X")
         {
             img = xImage;
             playerTurn = "O";
-            //oPlayer.Value.enablePlayer();
-            //xPlayer.Value.disablePlayer();
+            oPlayer.Value.enablePlayer();
+            xPlayer.Value.disablePlayer();
         }
         else
         {
             img = oImage;
             playerTurn = "X";
-            //xPlayer.Value.enablePlayer();
-            //oPlayer.Value.disablePlayer();
+            xPlayer.Value.enablePlayer();
+            oPlayer.Value.disablePlayer();
         }
         mainGameScript.setPlayerTurn(playerTurn);
         button.GetComponent<Image>().sprite = img;
         button.interactable = false;
     }
 
-    /*public bool VerticalCheck()
+    public bool VerticalCheck()
     {
-        foreach(Rows row in cell.Value)
+        for (int i = 0; i < cellList.Count; i += 3)
         {
-            string beginningMark = row.rowsList[0].mark;
-            if (beginningMark != "")
+            string mark = cellList[i].mark.ToString();
+            if (mark != "")
             {
-                if (row.rowsList[1].mark == beginningMark && row.rowsList[2].mark == beginningMark)
+                if (cellList[i+1].mark == mark && cellList[i+2].mark == mark)
                 {
                     return true;
                 }
             }
         }
         return false;
-    }*/
+    }
 
-    /*public bool HorizontalCheck()
+    public bool HorizontalCheck()
     {
-        for (int i = 0; i < cell.Value.Count; i++)
+        for (int i = 0; i < cellList.Count; i++)
         {
-            string beginningMark = cell.Value[0].rowsList[i].mark;
-            if (beginningMark != "")
+            string mark = cellList[i].mark.ToString();
+            if (mark != "")
             {
-                if (cell.Value[1].rowsList[i].mark == beginningMark && cell.Value[2].rowsList[i].mark == beginningMark)
+                if (cellList[i + 3].mark == mark && cellList[i + 6].mark == mark)
                 {
                     return true;
                 }
@@ -158,10 +150,10 @@ public class TicTacToeScript : NetworkBehaviour
 
     public bool DiagonalCheck()
     {
-        string beginningMark = cell.Value[0].rowsList[0].mark;
-        if (beginningMark != "")
+        string mark = cellList[0].mark.ToString();
+        if (mark != "")
         {
-            if (cell.Value[1].rowsList[1].mark == beginningMark && cell.Value[2].rowsList[2].mark == beginningMark)
+            if (cellList[4].mark == mark && cellList[8].mark == mark)
             {
                 return true;
             }
@@ -171,10 +163,10 @@ public class TicTacToeScript : NetworkBehaviour
 
     public bool ReverseDiagonalCheck()
     {
-        string beginningMark = cell.Value[0].rowsList[2].mark;
-        if (beginningMark != "")
+        string mark = cellList[2].mark.ToString();
+        if (mark != "")
         {
-            if (cell.Value[1].rowsList[1].mark == beginningMark && cell.Value[2].rowsList[0].mark == beginningMark)
+            if (cellList[4].mark == mark && cellList[6].mark == mark)
             {
                 return true;
             }
@@ -184,15 +176,27 @@ public class TicTacToeScript : NetworkBehaviour
 
     public void Reset()
     {
-        foreach (Rows row in cell.Value)
+        settingNetworkList();
+        foreach (Transform cell in transform)
         {
-            foreach (Squares sqaure in row.rowsList)
+            if (cell.name.Contains("Cell"))
             {
-                sqaure.mark = "";
-                sqaure.button.GetComponent<Image>().sprite = null;
-                sqaure.button.interactable = true;
+                transform.GetComponent<Button>().interactable = true;
+                transform.GetComponent<Image>().sprite = null;
             }
         }
         mainGameScript.Reset();
-    }*/
+    }
+
+    public void settingNetworkList()
+    {
+        cellList = new NetworkList<Cell>();
+        foreach (Transform cell in transform)
+        {
+            if (cell.name.Contains("Cell"))
+            {
+                cellList.Add(new Cell(cell.name, ""));
+            }
+        }
+    }
 }

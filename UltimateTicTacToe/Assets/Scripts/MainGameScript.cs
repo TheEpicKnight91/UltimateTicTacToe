@@ -44,7 +44,7 @@ public class MainGameScript : MonoBehaviour
     {
         if(!win)
         {
-            //playerTurn = ticTacToeScript.getPlayerTurn();
+            playerTurn = ticTacToeScript.getPlayerTurn();
             message = "Player " + playerTurn + "'s Turn";
             mainText.text = message;
         }
@@ -52,7 +52,7 @@ public class MainGameScript : MonoBehaviour
 
     public void setPlayerWin(string player)
     {
-        //playerTurn = ticTacToeScript.getPlayerTurn();
+        playerTurn = ticTacToeScript.getPlayerTurn();
         message = "Player " + playerTurn + " Wins";
         mainText.text = message;
         newGameBtn.gameObject.SetActive(true);
@@ -66,7 +66,7 @@ public class MainGameScript : MonoBehaviour
         exitGameBtn.gameObject.SetActive(false);
         win = false;
         playerTurn = new string[] { player1, player2 }.GetValue(Random.Range(0, 2)).ToString();
-        //ticTacToeScript.setPlayerTurn(playerTurn);
+        ticTacToeScript.setPlayerTurn(playerTurn);
         message = "Player " + playerTurn + "'s Turn";
         mainText.text = message;
     }
