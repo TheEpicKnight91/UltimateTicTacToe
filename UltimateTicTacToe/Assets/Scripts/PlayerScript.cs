@@ -12,7 +12,7 @@ public class PlayerScript : MonoBehaviour
     void Start()
     {
         playerSymbol = "";
-        if (NetworkManager.Singleton.IsServer)
+        if (this.GetComponent<NetworkObject>().IsOwner)
         {
             playerSymbol = "X";
             this.gameObject.tag = "xPlayer";

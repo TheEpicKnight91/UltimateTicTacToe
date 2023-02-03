@@ -35,29 +35,28 @@ public class TicTacToeScript : NetworkBehaviour
     public Sprite oImage;
     public NetworkList<Cell> cellList;
     public MainGameScript mainGameScript;
-    public NetworkVariable<PlayerScript> xPlayer = null;
-    public NetworkVariable<PlayerScript> oPlayer = null;
+    public PlayerScript xPlayer = null;
+    public PlayerScript oPlayer = null;
 
     private string playerTurn = "";
+
+    void Awake()
+    {
+        cellList = new NetworkList<Cell>();
+    }
     // Start is called before the first frame update
     void Start()
     {
         settingNetworkList();
-        if (NetworkManager.Singleton.IsServer)
-        {
-            xPlayer.Value = GameObject.FindWithTag("xPlayer").GetComponent<PlayerScript>();
-        }
-        else
-        {
-            oPlayer.Value = GameObject.FindWithTag("oPlayer").GetComponent<PlayerScript>();
-        }
+        xPlayer = GameObject.FindWithTag("xPlayer").GetComponent<PlayerScript>();
+        oPlayer = GameObject.FindWithTag("oPlayer").GetComponent<PlayerScript>();
         if (playerTurn == "X")
         {
-            oPlayer.Value.disablePlayer();
+            oPlayer.disablePlayer();
         }
         else
         {
-            xPlayer.Value.disablePlayer();
+            xPlayer.disablePlayer();
         }
     }
 
@@ -101,15 +100,15 @@ public class TicTacToeScript : NetworkBehaviour
         {
             img = xImage;
             playerTurn = "O";
-            oPlayer.Value.enablePlayer();
-            xPlayer.Value.disablePlayer();
+            oPlayer.enablePlayer();
+            xPlayer.disablePlayer();
         }
         else
         {
             img = oImage;
             playerTurn = "X";
-            xPlayer.Value.enablePlayer();
-            oPlayer.Value.disablePlayer();
+            xPlayer.enablePlayer();
+            oPlayer.disablePlayer();
         }
         mainGameScript.setPlayerTurn(playerTurn);
         button.GetComponent<Image>().sprite = img;
@@ -176,6 +175,7 @@ public class TicTacToeScript : NetworkBehaviour
 
     public void Reset()
     {
+        cellList = new NetworkList<Cell>();
         settingNetworkList();
         foreach (Transform cell in transform)
         {
@@ -190,7 +190,6 @@ public class TicTacToeScript : NetworkBehaviour
 
     public void settingNetworkList()
     {
-        cellList = new NetworkList<Cell>();
         foreach (Transform cell in transform)
         {
             if (cell.name.Contains("Cell"))

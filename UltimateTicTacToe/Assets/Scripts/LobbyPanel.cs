@@ -89,7 +89,6 @@ public class LobbyPanel : MonoBehaviour
 
     private bool ReadyCheck(string ready)
     {
-        Debug.Log(ready);
         if (ready == "True")
         {
             return true;

@@ -24,7 +24,7 @@ public class MainGameScript : MonoBehaviour
         newGameBtn.gameObject.SetActive(false);
         exitGameBtn.gameObject.SetActive(false);
         playerTurn = new string[] { player1, player2 }.GetValue(Random.Range(0, 2)).ToString();
-        //ticTacToeScript.setPlayerTurn(playerTurn);
+        ticTacToeScript.setPlayerTurn(playerTurn);
         message = "Player " + playerTurn + "'s Turn";
         mainText.text = message;
         win = false;
