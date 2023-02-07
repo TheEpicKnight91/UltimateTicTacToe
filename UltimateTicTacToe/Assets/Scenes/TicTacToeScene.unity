@@ -220,8 +220,8 @@ RectTransform:
   - {fileID: 432564283}
   - {fileID: 2143565586}
   - {fileID: 1242453441}
-  - {fileID: 1498196423}
   - {fileID: 704656275}
+  - {fileID: 1498196423}
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -558,7 +558,7 @@ RectTransform:
   m_Children:
   - {fileID: 1928746588}
   m_Father: {fileID: 35543581}
-  m_RootOrder: 6
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -876,14 +876,14 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1498196422}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2093437549}
   m_Father: {fileID: 35543581}
-  m_RootOrder: 5
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -1098,10 +1098,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cfbd6492a6e9d97489c63341d3c92326, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  newGameBtn: {fileID: 1498196424}
-  exitGameBtn: {fileID: 704656276}
-  mainText: {fileID: 432564284}
-  ticTacToeScript: {fileID: 2047894032}
 --- !u!1 &1928746587
 GameObject:
   m_ObjectHideFlags: 0
@@ -1244,13 +1240,61 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 1619109832}
     m_Modifications:
+    - target: {fileID: 401714373888842815, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: choseSquare
+      objectReference: {fileID: 0}
+    - target: {fileID: 724303966645483915, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: choseSquare
+      objectReference: {fileID: 0}
+    - target: {fileID: 725808375482966268, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: choseSquare
+      objectReference: {fileID: 0}
+    - target: {fileID: 1499437809242204288, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: choseSquare
+      objectReference: {fileID: 0}
+    - target: {fileID: 1872477609415132337, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
+      propertyPath: mainText
+      value: 
+      objectReference: {fileID: 432564284}
+    - target: {fileID: 1872477609415132337, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
+      propertyPath: newGameBtn
+      value: 
+      objectReference: {fileID: 1498196424}
+    - target: {fileID: 1872477609415132337, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
+      propertyPath: exitGameBtn
+      value: 
+      objectReference: {fileID: 704656276}
     - target: {fileID: 1872477609415132337, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
       propertyPath: mainGameScript
       value: 
       objectReference: {fileID: 1619109833}
+    - target: {fileID: 2320188384696475594, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: choseSquare
+      objectReference: {fileID: 0}
+    - target: {fileID: 3608337158044088910, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: choseSquare
+      objectReference: {fileID: 0}
+    - target: {fileID: 5911242088907609234, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: choseSquare
+      objectReference: {fileID: 0}
+    - target: {fileID: 6145674238451952036, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: choseSquare
+      objectReference: {fileID: 0}
     - target: {fileID: 6842790649218346354, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
       propertyPath: m_Name
       value: TicTacToeCell
+      objectReference: {fileID: 0}
+    - target: {fileID: 7374324899140934309, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: choseSquare
       objectReference: {fileID: 0}
     - target: {fileID: 8975900328064347294, guid: fbc2fd3b8953c1a4295c0c8ef4d553ee, type: 3}
       propertyPath: m_Pivot.x

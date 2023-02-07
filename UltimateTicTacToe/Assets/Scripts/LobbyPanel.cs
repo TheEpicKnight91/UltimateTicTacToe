@@ -73,6 +73,7 @@ public class LobbyPanel : MonoBehaviour
                 break;
             }
         }
+        
         startBtn.interactable = startOn;
         Show();
     }

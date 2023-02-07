@@ -1,7 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
+using Unity.Services.Lobbies.Models;
+using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -34,11 +37,14 @@ public class TicTacToeScript : NetworkBehaviour
     public Sprite xImage;
     public Sprite oImage;
     public NetworkList<Cell> cellList;
-    public MainGameScript mainGameScript;
-    public PlayerScript xPlayer = null;
-    public PlayerScript oPlayer = null;
+    public Button newGameBtn;
+    public Button exitGameBtn;
+    public TextMeshProUGUI mainText;
 
-    private string playerTurn = "";
+    private PlayerScript playerTurn;
+    private PlayerScript xPlayer;
+    private PlayerScript oPlayer;
+    private string message;
 
     void Awake()
     {
@@ -47,16 +53,30 @@ public class TicTacToeScript : NetworkBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        settingNetworkList();
+        if (IsOwner)
+        {
+            settingNetworkList();
+        }
+        newGameBtn.gameObject.SetActive(false);
+        exitGameBtn.gameObject.SetActive(false);
+        message = "Player " + playerTurn + "'s Turn";
+        mainText.text = message;
         xPlayer = GameObject.FindWithTag("xPlayer").GetComponent<PlayerScript>();
         oPlayer = GameObject.FindWithTag("oPlayer").GetComponent<PlayerScript>();
-        if (playerTurn == "X")
+        xPlayer.setTicTacToeScript(this);
+        oPlayer.setTicTacToeScript(this);
+        playerTurn = (PlayerScript)new PlayerScript[] { xPlayer, oPlayer }.GetValue(Random.Range(0, 2));
+        if (playerTurn == xPlayer)
         {
-            oPlayer.disablePlayer();
+            Debug.Log(oPlayer.getClientId());
+            oPlayer.disablePlayerClientRpc(createClientParams(oPlayer.getClientId()));
+            Debug.Log("Disabling O Player");
         }
-        else
+        else if (playerTurn == oPlayer)
         {
-            xPlayer.disablePlayer();
+            Debug.Log(xPlayer.getClientId());
+            xPlayer.disablePlayerClientRpc(createClientParams(xPlayer.getClientId()));
+            Debug.Log("Disabling X Player");
         }
     }
 
@@ -65,57 +85,92 @@ public class TicTacToeScript : NetworkBehaviour
     {
         
     }
-
-    public void setPlayerTurn(string player)
-    {
-        playerTurn = player.ToUpper();
-    }
-    public string getPlayerTurn()
+    public PlayerScript getPlayerTurn()
     {
         return playerTurn;
     }
-    public void ChoseSquare(Button button)
+
+    public ClientRpcParams createClientParams(ulong clientId)
+    {
+        return new ClientRpcParams()
+        {
+            Send = new ClientRpcSendParams()
+            {
+                TargetClientIds = new[] { clientId }
+            }
+        };
+    }
+    public void choseSquare(Button button)
+    {
+        updateSquareServerRpc(button.transform.name);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void updateSquareServerRpc(string button)
     {
         Sprite img;
-        Cell cellClicked = new Cell(button.transform.name, "");
+        GameObject btn = GameObject.Find(button);
+        Cell cellClicked = new Cell(button, "");
         foreach(Cell cell in cellList)
         {
             if (cell.Equals(cellClicked))
             {
-                cellClicked.mark = playerTurn;
+                cellClicked.mark = playerTurn.getPlayerSymbol();
                 cellList[cellList.IndexOf(cell)] = cellClicked;
                 break;
             }
         }
-        if (VerticalCheck() || HorizontalCheck() || DiagonalCheck() || ReverseDiagonalCheck())
+        img = changePlayerTurn();
+        btn.GetComponent<Image>().sprite = img;
+        btn.GetComponent<Button>().interactable = false;
+        if (!checkWinConditions())
+        {
+            message = "Player " + playerTurn + "'s Turn";
+            mainText.text = message;
+        }
+    }
+
+    public bool checkWinConditions()
+    {
+        if (verticalCheck() || horizontalCheck() || diagonalCheck() || reverseDiagonalCheck())
         {
             Debug.Log("Winner: Player " + playerTurn);
-            mainGameScript.setPlayerWin(playerTurn);
+            message = "Player " + playerTurn + " Wins";
+            mainText.text = message;
+            newGameBtn.gameObject.SetActive(true);
+            exitGameBtn.gameObject.SetActive(true);
             foreach (Transform cell in transform)
             {
-                transform.GetComponent<Button>().interactable = false;
+                if (cell.name.Contains("Cell"))
+                {
+                    transform.GetComponent<Button>().interactable = false;
+                }
             }
+            return true;
         }
-        if (playerTurn == "X")
+        return false;
+    }
+
+    public Sprite changePlayerTurn()
+    {
+        Sprite img;
+        if (playerTurn == xPlayer)
         {
+            playerTurn = oPlayer;
+            oPlayer.enablePlayerClientRpc(createClientParams(oPlayer.getClientId()));
+            xPlayer.disablePlayerClientRpc(createClientParams(xPlayer.getClientId()));
             img = xImage;
-            playerTurn = "O";
-            oPlayer.enablePlayer();
-            xPlayer.disablePlayer();
         }
         else
         {
+            playerTurn = xPlayer;
+            xPlayer.enablePlayerClientRpc(createClientParams(xPlayer.getClientId()));
+            oPlayer.disablePlayerClientRpc(createClientParams(oPlayer.getClientId()));
             img = oImage;
-            playerTurn = "X";
-            xPlayer.enablePlayer();
-            oPlayer.disablePlayer();
         }
-        mainGameScript.setPlayerTurn(playerTurn);
-        button.GetComponent<Image>().sprite = img;
-        button.interactable = false;
+        return img;
     }
-
-    public bool VerticalCheck()
+    public bool verticalCheck()
     {
         for (int i = 0; i < cellList.Count; i += 3)
         {
@@ -131,7 +186,7 @@ public class TicTacToeScript : NetworkBehaviour
         return false;
     }
 
-    public bool HorizontalCheck()
+    public bool horizontalCheck()
     {
         for (int i = 0; i < cellList.Count; i++)
         {
@@ -147,7 +202,7 @@ public class TicTacToeScript : NetworkBehaviour
         return false;
     }
 
-    public bool DiagonalCheck()
+    public bool diagonalCheck()
     {
         string mark = cellList[0].mark.ToString();
         if (mark != "")
@@ -160,7 +215,7 @@ public class TicTacToeScript : NetworkBehaviour
         return false;
     }
 
-    public bool ReverseDiagonalCheck()
+    public bool reverseDiagonalCheck()
     {
         string mark = cellList[2].mark.ToString();
         if (mark != "")
@@ -185,7 +240,11 @@ public class TicTacToeScript : NetworkBehaviour
                 transform.GetComponent<Image>().sprite = null;
             }
         }
-        mainGameScript.Reset();
+        newGameBtn.gameObject.SetActive(false);
+        exitGameBtn.gameObject.SetActive(false);
+        playerTurn = (PlayerScript)new PlayerScript[] { xPlayer, oPlayer }.GetValue(Random.Range(0, 2));
+        message = "Player " + playerTurn + "'s Turn";
+        mainText.text = message;
     }
 
     public void settingNetworkList()

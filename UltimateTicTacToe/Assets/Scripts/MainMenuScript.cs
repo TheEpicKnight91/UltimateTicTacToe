@@ -41,7 +41,6 @@ public class MainMenuScript : MonoBehaviour
         }
         else
         {
-            Debug.Log("Please enter player name");
             errorTxt.SetActive(true);
         }
     }
@@ -53,17 +52,8 @@ public class MainMenuScript : MonoBehaviour
 
     public void JoinPanel()
     {
-        if (playerName.text != null && playerName.text != "")
-        {
-            errorTxt.SetActive(false);
-            joinPanel.SetActive(true);
-            mainMenuPanel.SetActive(false);
-        }
-        else
-        {
-            Debug.Log("Please enter player name");
-            errorTxt.SetActive(true);
-        }
+        joinPanel.SetActive(true);
+        mainMenuPanel.SetActive(false);
     }
 
     public void JoinLobby()

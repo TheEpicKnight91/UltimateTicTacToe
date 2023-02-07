@@ -79,10 +79,10 @@ public class LobbyManager : MonoBehaviour
             initializationOptions.SetProfile(name);
             await UnityServices.InitializeAsync(initializationOptions);
 
-            AuthenticationService.Instance.SignedIn += () =>
+            /*AuthenticationService.Instance.SignedIn += () =>
             {
                 Debug.Log("Signed in with Player Id: " + AuthenticationService.Instance.PlayerId);
-            };
+            };*/
 
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
         }
@@ -98,7 +98,7 @@ public class LobbyManager : MonoBehaviour
                 float heartbeatTimerMax = 10f;
                 heartbeatTimer = heartbeatTimerMax;
 
-                Debug.Log("Heartbeat");
+                //Debug.Log("Heartbeat");
                 await LobbyService.Instance.SendHeartbeatPingAsync(curLobby.Id);
             }
         }
@@ -213,7 +213,7 @@ public class LobbyManager : MonoBehaviour
 
     public void StartGame()
     {
-        Debug.Log(NetworkManager.Singleton.ConnectedClients);
+        //Debug.Log(NetworkManager.Singleton.ConnectedClients);
         NetworkManager.Singleton.SceneManager.LoadScene("TicTacToeScene", LoadSceneMode.Single);
     }
 }
