@@ -1,14 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using Unity.Netcode;
-using UnityEngine.UI;
-using Unity.Services.Core;
-using Unity.Services.Authentication;
-using System;
-using Unity.Services.Lobbies;
-using Unity.Services.Lobbies.Models;
-using UnityEditor;
 using TMPro;
 
 public class MainMenuScript : MonoBehaviour
@@ -29,7 +19,7 @@ public class MainMenuScript : MonoBehaviour
         errorTxt.SetActive(false);
         loginPanel.SetActive(true);
     }
-
+    //ui for login screen
     public void LogIn()
     {
         LobbyManager.Instance.Login(playerName.text);
@@ -44,24 +34,33 @@ public class MainMenuScript : MonoBehaviour
             errorTxt.SetActive(true);
         }
     }
+    //changes ui for when hosting a new lobby
     public void Hosting()
     {
         LobbyManager.Instance.NewLobby();
         mainMenuPanel.SetActive(false);
     }
-
+    //shows the list of lobby screen
     public void JoinPanel()
     {
-        joinPanel.SetActive(true);
-        mainMenuPanel.SetActive(false);
+        if (playerName.text != null && playerName.text != "")
+        {
+            errorTxt.SetActive(false);
+            joinPanel.SetActive(true);
+            mainMenuPanel.SetActive(false);
+        }
+        else
+        {
+            errorTxt.SetActive(true);
+        }
     }
-
+    //allows player to join a certain lobby by code
     public void JoinLobby()
     {
         joinPanel.SetActive(false);
         LobbyManager.Instance.JoinLobbyWithCode(lobbyCode.text);
     }
-
+    //toggles the player ready state
     public void ToggleReady()
     {
         LobbyManager.Instance.UpdatePlayerReady();

@@ -1,8 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.Netcode;
 using Unity.Services.Lobbies.Models;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class LobbyPanel : MonoBehaviour
@@ -16,19 +18,22 @@ public class LobbyPanel : MonoBehaviour
     public List<Button> readyBtn = new List<Button>();
     // Start is called before the first frame update
 
+    //creates and instance of lobby panel
     private void Awake()
     {
         Instance = this;
     }
+    //sets up the lobby manager events and the first time lobby hosting screen
     private void Start()
     {
         LobbyManager.Instance.OnJoinedLobby += UpdateLobby;
         LobbyManager.Instance.OnToggleReady += UpdateLobby;
+        LobbyManager.Instance.OnStartGame += StartGame;
         startBtn.interactable = false;
         startBtn.gameObject.SetActive(false);
         Hide();
     }
-
+    //updates the lobby gui with player states and what players are in the lobby
     private void UpdateLobby(object sender, LobbyManager.LobbyEventArgs e)
     {
         Lobby lobby = LobbyManager.Instance.getCurLobby();
@@ -60,7 +65,6 @@ public class LobbyPanel : MonoBehaviour
         }
         else
         {
-            startBtn.gameObject.SetActive(false);
             readyBtn[0].gameObject.SetActive(false);
         }
         lobbyCodeTxt.text = "Lobby Code: " + lobby.LobbyCode;
@@ -73,21 +77,31 @@ public class LobbyPanel : MonoBehaviour
                 break;
             }
         }
-        
         startBtn.interactable = startOn;
         Show();
     }
+    //sets the player objects on the server with correct names, and client ids
+    private void StartGame(object sender, LobbyManager.LobbyEventArgs e)
+    {
+        Lobby lobby = LobbyManager.Instance.getCurLobby();
 
+        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        players[0].GetComponent<PlayerScript>().setPlayerName(lobby.Players[0].Data[LobbyManager.KEY_PLAYER_NAME].Value);
+        players[0].GetComponent<PlayerScript>().setPlayerClientID(NetworkManager.Singleton.ConnectedClientsIds[0]);
+        players[1].GetComponent<PlayerScript>().setPlayerName(lobby.Players[1].Data[LobbyManager.KEY_PLAYER_NAME].Value);
+        players[1].GetComponent<PlayerScript>().setPlayerClientID(NetworkManager.Singleton.ConnectedClientsIds[1]);
+    }
+    //showsstart button once all players are ready
     private void Show()
     {
         gameObject.SetActive(true);
     }
-
+    //hides the start button when at least one player isnt ready
     private void Hide()
     {
         gameObject.SetActive(false);
     }
-
+    //check to see if player is ready
     private bool ReadyCheck(string ready)
     {
         if (ready == "True")

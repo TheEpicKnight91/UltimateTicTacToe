@@ -2,9 +2,7 @@
     using ParrelSync;
 #endif
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using Unity.Services.Authentication;
@@ -33,16 +31,19 @@ public class LobbyManager : MonoBehaviour
 
     public event EventHandler<LobbyEventArgs> OnJoinedLobby;
     public event EventHandler<LobbyEventArgs> OnToggleReady;
+    public event EventHandler<LobbyEventArgs> OnStartGame;
     public class LobbyEventArgs : EventArgs
     {
         public Lobby lobby;
     }
 
+    //gets current lobby we are in
     public Lobby getCurLobby() 
     {
         return curLobby; 
     }
 
+    //gets the player name
     public string getPlayerName()
     { 
         return playerName; 
@@ -62,6 +63,7 @@ public class LobbyManager : MonoBehaviour
         HandleLobbyPolling();
     }
 
+    //checks to see if current player is the lobby host
     public bool IsLobbyHost()
     {
         return curLobby != null && curLobby.HostId == AuthenticationService.Instance.PlayerId;
@@ -79,10 +81,10 @@ public class LobbyManager : MonoBehaviour
             initializationOptions.SetProfile(name);
             await UnityServices.InitializeAsync(initializationOptions);
 
-            /*AuthenticationService.Instance.SignedIn += () =>
+            AuthenticationService.Instance.SignedIn += () =>
             {
                 Debug.Log("Signed in with Player Id: " + AuthenticationService.Instance.PlayerId);
-            };*/
+            };
 
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
         }
@@ -95,10 +97,10 @@ public class LobbyManager : MonoBehaviour
             heartbeatTimer -= Time.deltaTime;
             if (heartbeatTimer < 0f)
             {
-                float heartbeatTimerMax = 10f;
+                float heartbeatTimerMax = 15f;
                 heartbeatTimer = heartbeatTimerMax;
 
-                //Debug.Log("Heartbeat");
+                Debug.Log("Heartbeat");
                 await LobbyService.Instance.SendHeartbeatPingAsync(curLobby.Id);
             }
         }
@@ -112,7 +114,8 @@ public class LobbyManager : MonoBehaviour
         });
     }
 
-    private void  SetTransformForClient(JoinAllocation a)
+    //sets up conection to the client and host
+    private void SetTransformForClient(JoinAllocation a)
     {
         transport.SetClientRelayData(a.RelayServer.IpV4, (ushort)a.RelayServer.Port, a.AllocationIdBytes, a.Key, a.ConnectionData, a.HostConnectionData);
     }
@@ -133,7 +136,7 @@ public class LobbyManager : MonoBehaviour
             }
         }
     }
-
+    //creates a new lobby when player hits new lobby button
     public async void NewLobby()
     {
         try
@@ -159,7 +162,7 @@ public class LobbyManager : MonoBehaviour
             Debug.Log(e);
         }
     }
-
+    //allows players to join lobby by entering the loby specific code
     public async void JoinLobbyWithCode(string code)
     {
         try
@@ -181,7 +184,7 @@ public class LobbyManager : MonoBehaviour
             Debug.Log(e);
         }
     }
-
+    //updates the player data ofthe specific player in the lobby with their ready state
     public async void UpdatePlayerReady()
     {
         if (curLobby != null)
@@ -211,9 +214,10 @@ public class LobbyManager : MonoBehaviour
         }
     }
 
+    //starts the game up when both players are ready and the host hits start
     public void StartGame()
     {
-        //Debug.Log(NetworkManager.Singleton.ConnectedClients);
+        OnStartGame?.Invoke(this, new LobbyEventArgs { lobby = curLobby });
         NetworkManager.Singleton.SceneManager.LoadScene("TicTacToeScene", LoadSceneMode.Single);
     }
 }

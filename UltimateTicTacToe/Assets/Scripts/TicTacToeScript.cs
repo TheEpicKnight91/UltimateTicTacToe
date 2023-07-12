@@ -1,82 +1,74 @@
-using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using Unity.Collections;
 using Unity.Netcode;
-using Unity.Services.Lobbies.Models;
-using UnityEditor.VersionControl;
 using UnityEngine;
-using UnityEngine.UI;
+using Button = UnityEngine.UI.Button;
+using Image = UnityEngine.UI.Image;
 
 public class TicTacToeScript : NetworkBehaviour
 {
-
-    public struct Cell : INetworkSerializable, System.IEquatable<Cell>
+    [System.Serializable]
+    public class Squares
     {
-        public FixedString64Bytes buttonName;
-        public FixedString64Bytes mark;
-
-        public  Cell(string button, string m)
-        {
-            buttonName = button;
-            mark = m;
-        }
-
-        public bool Equals(Cell other)
-        {
-            return buttonName.Equals(other.buttonName) && mark.Equals(other.mark);
-        }
-
-        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
-        {
-            serializer.SerializeValue(ref mark);
-            serializer.SerializeValue(ref buttonName);
-        }
+        public Button buttonObject;
+        public string buttonSymbol;
+    }
+    [System.Serializable]
+    public class Rows
+    {
+        public List<Squares> row = new List<Squares>();
     }
 
     public Sprite xImage;
     public Sprite oImage;
-    public NetworkList<Cell> cellList;
-    public Button newGameBtn;
-    public Button exitGameBtn;
-    public TextMeshProUGUI mainText;
+    public MainGameScript mainGameScript;
+    private PlayerScript xPlayer = null;
+    private PlayerScript oPlayer = null;
 
-    private PlayerScript playerTurn;
-    private PlayerScript xPlayer;
-    private PlayerScript oPlayer;
-    private string message;
-
-    void Awake()
-    {
-        cellList = new NetworkList<Cell>();
-    }
+    private PlayerScript currentPlayerTurn;
+    public List<Rows> listOfSqaures = new List<Rows>();
     // Start is called before the first frame update
+
+    //creates a client rpc param to specify which client to send a rpc to
+    public ClientRpcParams createClientRpcParms(ulong clientID)
+    {
+        return new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new ulong[] { clientID }
+            }
+        };
+    }
+
     void Start()
     {
-        if (IsOwner)
+        if (IsServer)
         {
-            settingNetworkList();
-        }
-        newGameBtn.gameObject.SetActive(false);
-        exitGameBtn.gameObject.SetActive(false);
-        message = "Player " + playerTurn + "'s Turn";
-        mainText.text = message;
-        xPlayer = GameObject.FindWithTag("xPlayer").GetComponent<PlayerScript>();
-        oPlayer = GameObject.FindWithTag("oPlayer").GetComponent<PlayerScript>();
-        xPlayer.setTicTacToeScript(this);
-        oPlayer.setTicTacToeScript(this);
-        playerTurn = (PlayerScript)new PlayerScript[] { xPlayer, oPlayer }.GetValue(Random.Range(0, 2));
-        if (playerTurn == xPlayer)
-        {
-            Debug.Log(oPlayer.getClientId());
-            oPlayer.disablePlayerClientRpc(createClientParams(oPlayer.getClientId()));
-            Debug.Log("Disabling O Player");
-        }
-        else if (playerTurn == oPlayer)
-        {
-            Debug.Log(xPlayer.getClientId());
-            xPlayer.disablePlayerClientRpc(createClientParams(xPlayer.getClientId()));
-            Debug.Log("Disabling X Player");
+            //sets the player to certian smbols for tic tac toe
+            GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+            foreach (GameObject player in players)
+            {
+                PlayerScript ps = player.GetComponent<PlayerScript>();
+                if (ps.getPlayerClientID().Equals(0))
+                {
+                    ps.setPlayerSymbol("X");
+                    xPlayer = ps;
+                }
+                else
+                {
+                    ps.setPlayerSymbol("O");
+                    oPlayer = ps;
+                }
+            }
+            //sets up the player text to display palyers names and sybmols
+            string p1Txt = "Player 1 : " + xPlayer.getPlayerName() + "\nSymbol : " + xPlayer.getPlayerSymbol();
+            string p2Txt = "Player 2 : " + oPlayer.getPlayerName() + "\nSymbol : " + oPlayer.getPlayerSymbol();
+            setUpText(p1Txt, p2Txt);
+            currentPlayerTurn = (PlayerScript)new PlayerScript[] { xPlayer, oPlayer }.GetValue(Random.Range(0, 2));
+            setCurrentPlayerTurn(currentPlayerTurn);
+            //sends an rpc to specific client to do the same as the above
+            firstTimeSetupClientRpc(p1Txt, p2Txt, createClientRpcParms(1));
         }
     }
 
@@ -85,99 +77,178 @@ public class TicTacToeScript : NetworkBehaviour
     {
         
     }
-    public PlayerScript getPlayerTurn()
+
+    //Sends data to client for first time setup
+    [ClientRpc]
+    public void firstTimeSetupClientRpc(string p1Text, string p2Text, ClientRpcParams clientRpcParams = default)
     {
-        return playerTurn;
+        setUpText(p1Text, p2Text);
     }
 
-    public ClientRpcParams createClientParams(ulong clientId)
+    public void setUpText(string p1Text, string p2Text)
     {
-        return new ClientRpcParams()
-        {
-            Send = new ClientRpcSendParams()
-            {
-                TargetClientIds = new[] { clientId }
-            }
-        };
-    }
-    public void choseSquare(Button button)
-    {
-        updateSquareServerRpc(button.transform.name);
+        GameObject.Find("Player1XText").GetComponent<TextMeshProUGUI>().text = p1Text;
+        GameObject.Find("Player2OText").GetComponent<TextMeshProUGUI>().text = p2Text;
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    public void updateSquareServerRpc(string button)
+    [ClientRpc]
+    public void setCurrentPlayerTurnClientRpc(string ptText, ClientRpcParams clientRpcParams = default)
     {
-        Sprite img;
-        GameObject btn = GameObject.Find(button);
-        Cell cellClicked = new Cell(button, "");
-        foreach(Cell cell in cellList)
+        setMainText(ptText);
+    }
+
+    public void setMainText(string cpt)
+    {
+        GameObject.Find("MainText").GetComponent<TextMeshProUGUI>().text = cpt;
+    }
+
+    public void setCurrentPlayerTurn(PlayerScript pt)
+    {
+        currentPlayerTurn = pt;
+        string currentPTurn = currentPlayerTurn.getPlayerName() + " Turn";
+        setMainText(currentPTurn);
+        setCurrentPlayerTurnClientRpc(currentPTurn, createClientRpcParms(1));
+        if (currentPlayerTurn.getPlayerClientID().Equals(0))
         {
-            if (cell.Equals(cellClicked))
-            {
-                cellClicked.mark = playerTurn.getPlayerSymbol();
-                cellList[cellList.IndexOf(cell)] = cellClicked;
-                break;
-            }
+            disableButtonsClientRpc(createClientRpcParms(1));
+            enableButtons();
         }
-        img = changePlayerTurn();
-        btn.GetComponent<Image>().sprite = img;
-        btn.GetComponent<Button>().interactable = false;
-        if (!checkWinConditions())
+        else
         {
-            message = "Player " + playerTurn + "'s Turn";
-            mainText.text = message;
+            disableButtons();
+            enableButtonsClientRpc(createClientRpcParms(1));
         }
     }
 
-    public bool checkWinConditions()
+    [ClientRpc]
+    public void enableButtonsClientRpc(ClientRpcParams clientRpcParams = default)
     {
-        if (verticalCheck() || horizontalCheck() || diagonalCheck() || reverseDiagonalCheck())
+        enableButtons();
+    }
+    public void enableButtons()
+    {
+        foreach (Rows row in listOfSqaures)
         {
-            Debug.Log("Winner: Player " + playerTurn);
-            message = "Player " + playerTurn + " Wins";
-            mainText.text = message;
-            newGameBtn.gameObject.SetActive(true);
-            exitGameBtn.gameObject.SetActive(true);
-            foreach (Transform cell in transform)
+            foreach (Squares square in row.row)
             {
-                if (cell.name.Contains("Cell"))
+                if (square.buttonSymbol.Equals(""))
                 {
-                    transform.GetComponent<Button>().interactable = false;
+                    square.buttonObject.interactable = true;
                 }
             }
-            return true;
         }
-        return false;
     }
 
-    public Sprite changePlayerTurn()
+    [ClientRpc]
+    public void disableButtonsClientRpc(ClientRpcParams clientRpcParams = default)
+    {
+        disableButtons();
+    }
+    public void disableButtons()
+    {
+        foreach(Rows row in listOfSqaures)
+        {
+            foreach(Squares square in row.row)
+            {
+                square.buttonObject.interactable = false;
+            }
+        }
+    }
+    public void ChoseSquare(Button button)
+    {
+        int rowIndex = 0;
+        int squareIndex = 0;
+        foreach(Rows row in listOfSqaures)
+        {
+            foreach(Squares square in row.row)
+            {
+                if (square.buttonObject.Equals(button))
+                {
+                    rowIndex = listOfSqaures.IndexOf(row);
+                    squareIndex = row.row.IndexOf(square);
+                    break;
+                }
+            }
+        }
+        if (IsServer)
+        {
+            setSqaureToSymbol(rowIndex, squareIndex);
+        }
+        else
+        {
+            setSquareServerRpc(rowIndex, squareIndex);
+        }
+    }
+
+    //client to server function to set square
+    [ServerRpc(RequireOwnership = false)]
+    public void setSquareServerRpc(int row, int square)
+    {
+        setSqaureToSymbol(row, square);
+    }
+
+    //server to client function to set square
+    [ClientRpc]
+    public void setSquareToSymbolClientRpc(int row, int square, string symbol, ClientRpcParams clientRpcParams = default)
     {
         Sprite img;
-        if (playerTurn == xPlayer)
+        if (symbol.Equals("X"))
         {
-            playerTurn = oPlayer;
-            oPlayer.enablePlayerClientRpc(createClientParams(oPlayer.getClientId()));
-            xPlayer.disablePlayerClientRpc(createClientParams(xPlayer.getClientId()));
             img = xImage;
         }
         else
         {
-            playerTurn = xPlayer;
-            xPlayer.enablePlayerClientRpc(createClientParams(xPlayer.getClientId()));
-            oPlayer.disablePlayerClientRpc(createClientParams(oPlayer.getClientId()));
             img = oImage;
         }
-        return img;
+        setSquare(row, square, symbol, img);
     }
-    public bool verticalCheck()
+    //server function
+    public void setSqaureToSymbol(int row, int square)
     {
-        for (int i = 0; i < cellList.Count; i += 3)
+        Sprite img;
+        PlayerScript newPlayer;
+        if (currentPlayerTurn.Equals(xPlayer))
         {
-            string mark = cellList[i].mark.ToString();
-            if (mark != "")
+            img = xImage;
+            newPlayer = oPlayer;
+        }
+        else
+        {
+            img = oImage;
+            newPlayer = xPlayer;
+        }
+        setSquare(row, square, currentPlayerTurn.getPlayerSymbol(), img);
+        setSquareToSymbolClientRpc(row, square, currentPlayerTurn.getPlayerSymbol(), createClientRpcParms(1));
+        if (VerticalCheck() || HorizontalCheck() || DiagonalCheck() || ReverseDiagonalCheck())
+        {
+            string win = "Winner: " + currentPlayerTurn.getPlayerName();
+            Debug.Log(win);
+            setMainText(win);
+            setCurrentPlayerTurnClientRpc(win, createClientRpcParms(1));
+            disableButtons();
+            disableButtonsClientRpc();
+        }
+        else
+        {
+            setCurrentPlayerTurn(newPlayer);
+        }
+    }
+
+    public void setSquare(int row, int square, string symbol, Sprite img)
+    {
+        Squares selectedSquare = listOfSqaures[row].row[square];
+        selectedSquare.buttonObject.GetComponent<Image>().sprite = img;
+        selectedSquare.buttonObject.interactable = false;
+        selectedSquare.buttonSymbol = symbol;
+    }
+    public bool VerticalCheck()
+    {
+        foreach(Rows row in listOfSqaures)
+        {
+            string beginningMark = row.row[0].buttonSymbol;
+            if (beginningMark != "")
             {
-                if (cellList[i+1].mark == mark && cellList[i+2].mark == mark)
+                if (row.row[1].buttonSymbol.Equals(beginningMark) && row.row[2].buttonSymbol.Equals(beginningMark))
                 {
                     return true;
                 }
@@ -186,14 +257,14 @@ public class TicTacToeScript : NetworkBehaviour
         return false;
     }
 
-    public bool horizontalCheck()
+    public bool HorizontalCheck()
     {
-        for (int i = 0; i < cellList.Count; i++)
+        for (int i = 0; i < listOfSqaures.Count; i++)
         {
-            string mark = cellList[i].mark.ToString();
-            if (mark != "")
+            string beginningMark = listOfSqaures[0].row[i].buttonSymbol;
+            if (beginningMark != "")
             {
-                if (cellList[i + 3].mark == mark && cellList[i + 6].mark == mark)
+                if (listOfSqaures[1].row[i].buttonSymbol.Equals(beginningMark) && listOfSqaures[2].row[i].buttonSymbol.Equals(beginningMark))
                 {
                     return true;
                 }
@@ -202,12 +273,12 @@ public class TicTacToeScript : NetworkBehaviour
         return false;
     }
 
-    public bool diagonalCheck()
+    public bool DiagonalCheck()
     {
-        string mark = cellList[0].mark.ToString();
-        if (mark != "")
+        string beginningMark = listOfSqaures[0].row[0].buttonSymbol;
+        if (beginningMark != "")
         {
-            if (cellList[4].mark == mark && cellList[8].mark == mark)
+            if (listOfSqaures[1].row[1].buttonSymbol.Equals(beginningMark) && listOfSqaures[2].row[2].buttonSymbol.Equals(beginningMark))
             {
                 return true;
             }
@@ -215,12 +286,12 @@ public class TicTacToeScript : NetworkBehaviour
         return false;
     }
 
-    public bool reverseDiagonalCheck()
+    public bool ReverseDiagonalCheck()
     {
-        string mark = cellList[2].mark.ToString();
-        if (mark != "")
+        string beginningMark = listOfSqaures[0].row[2].buttonSymbol;
+        if (beginningMark != "")
         {
-            if (cellList[4].mark == mark && cellList[6].mark == mark)
+            if (listOfSqaures[1].row[1].buttonSymbol.Equals(beginningMark) && listOfSqaures[2].row[0].buttonSymbol.Equals(beginningMark))
             {
                 return true;
             }
@@ -228,33 +299,17 @@ public class TicTacToeScript : NetworkBehaviour
         return false;
     }
 
-    public void Reset()
+    /*public void Reset()
     {
-        cellList = new NetworkList<Cell>();
-        settingNetworkList();
-        foreach (Transform cell in transform)
+        foreach (Rows row in cell.Value)
         {
-            if (cell.name.Contains("Cell"))
+            foreach (Squares sqaure in row.rowsList)
             {
-                transform.GetComponent<Button>().interactable = true;
-                transform.GetComponent<Image>().sprite = null;
+                sqaure.mark = "";
+                sqaure.button.GetComponent<Image>().sprite = null;
+                sqaure.button.interactable = true;
             }
         }
-        newGameBtn.gameObject.SetActive(false);
-        exitGameBtn.gameObject.SetActive(false);
-        playerTurn = (PlayerScript)new PlayerScript[] { xPlayer, oPlayer }.GetValue(Random.Range(0, 2));
-        message = "Player " + playerTurn + "'s Turn";
-        mainText.text = message;
-    }
-
-    public void settingNetworkList()
-    {
-        foreach (Transform cell in transform)
-        {
-            if (cell.name.Contains("Cell"))
-            {
-                cellList.Add(new Cell(cell.name, ""));
-            }
-        }
-    }
+        mainGameScript.Reset();
+    }*/
 }
